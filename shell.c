@@ -19,7 +19,7 @@ void reemplazar(char *linea)
 	}
 }
 
-int main()
+int main(void)
 {
 	int fds[2];
 
@@ -30,11 +30,16 @@ int main()
 	printf("pid del padre %d\n", getpid());
 	while (1)
 	{
-
 		printf("$ ");
-		fgets(buf, 100, stdin);
+		fgets(buf, 80, stdin);
+		while(strcmp(buf,"\n") == 0){
+			printf("$ ");
+			fgets(buf, 80, stdin);
+		}
 		reemplazar(buf);
-		/*
+		
+		printf("%s\n", buf);
+
 		int i = 0;
 		char *valor;
 		args[i] = strdup(strtok(buf, " "));
@@ -43,22 +48,26 @@ int main()
 			args[i] = strdup(valor);
 			i++;
 		}
-		*/
-		if (strcmp(buf, "exit") != 0)
+
+		if (strcmp(buf,"exit") != 0)
 		{
-			strcat("/bin/", buf)
-			printf("%s\n", buf);
+			//strcat("/bin/", buf);
+			
 			fflush(stdout);
-			if (pipe(fd) == -1) {	// creando un pipe
+			if (pipe(fds) == -1) {	// creando un pipe
 				fprintf(stderr,"Pipe fallado");
 				return 1;
 			} 
-			pid_t pid = fork();
-			if (pid > 0)	//proceso del padre
+			cpid = fork();
+			if(cpid<0){
+				exit(0);
+			}
+			if (cpid > 0)	//proceso del padre
 			{
 				close(fds[0]); //close stdin
 				dup(fds[0]);   // redirect standard input to the pipe table
-				write(fds[1], buf, strlen(buf) + 1);
+				write(fds[1],buf, strlen(buf) + 1);
+				//printf("%s\n",buf);
 				close(fds[1]);
 
 				int stat = -1;
@@ -69,15 +78,20 @@ int main()
 			{
 				close(fds[1]); //close stdin
 				dup(fds[1]);   // redirect standard output to the pipe table
-				char read_msg[strlen(buf) + 1];
-				read(fds[1], read_msg, strlen(buf) + 1);
+				char read_msg[strlen(buf)];
+				read(fds[0], read_msg, strlen(buf) + 1);
 				close(fds[0]);
+				//printf("%s\n",read_msg);
+
+				
+
 				int res = execvp(read_msg, args);
 				printf("Error de execl %d", res);
 			}
 		}else{
+			//Si el usuario manda exit
 			exit(0);
 		}
 	}
-	return 1;
+	return 0;
 }
